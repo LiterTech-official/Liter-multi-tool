@@ -185,17 +185,7 @@ For Have I Been Pwned, configure the `HIBP_API_KEY` environment variable.
 | Q | Quit / return to dashboard |
 | SPACE | Skip to the intro credit screen |
 
-## Project Structure
 
-```text
-LITER-TOOL/
-│
-├── liter_tool.py       # Main application
-├── api_keys.json       # API configuration (private)
-├── BIG-WPA-LIST-2      # Optional WiFi wordlist
-├── requirements.txt    # Python dependencies
-└── README.md           # Project documentation
-```
 
 ## Security & Legal Disclaimer
 
