@@ -205,6 +205,7 @@ Certain features, including WiFi password auditing and multithreaded load genera
 **LITER TECH**
 
 Cybersecurity | Network Analysis | OSINT | Python Development
+tiktok: liter tech
 
 ---
 
