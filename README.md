@@ -85,6 +85,19 @@ Install the main dependencies:
 pip install pygame requests dnspython
 ```
 
+if it did't work, try:
+
+```bash
+python3 -m venv env
+```
+
+then: 
+```bash
+source env/bin/activate
+```
+
+after this, retry the main dependencies.
+
 Optional dependency for packet analysis:
 
 ```bash
