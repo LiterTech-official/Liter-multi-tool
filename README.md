@@ -139,7 +139,7 @@ pip install pygame dnspython
 Launch the application:
 
 ```bash
-python3 liter_tool.py
+sudo python3 liter_tool.py
 ```
 
 ## API Configuration
