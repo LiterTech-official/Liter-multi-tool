@@ -1,4 +1,4 @@
-# Liter Tool – Configuration Guide
+# core Tool – Configuration Guide
 
 ## 1. Custom Wordlist Directory
 
@@ -8,7 +8,7 @@ The default Wi-Fi wordlist path is defined in `liter_tool.py`.
 
 ### Where to change the path
 
-Open `liter_tool.py` and go to **line 159**.
+Open `core_tool.py` and go to **line 159**.
 
 You will find:
 
