@@ -4,7 +4,7 @@
 
 Liter Tool allows users to choose their own wordlist file location.
 
-The default Wi-Fi wordlist path is defined in `liter_tool.py`.
+The default Wi-Fi wordlist path is defined in `core_tool.py`.
 
 ### Where to change the path
 
