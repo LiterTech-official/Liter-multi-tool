@@ -1,4 +1,4 @@
-# 🔴 LITER TOOL
+# 🔴 CORE TOOL
 
 <p align="center">
   <strong>Advanced Network Analysis, OSINT & Cybersecurity Toolkit</strong>
@@ -15,11 +15,11 @@
 
 ## Overview
 
-**LITER TOOL** is a Python-based cybersecurity toolkit featuring a custom graphical interface inspired by the Matrix aesthetic.
+**CORE TOOL** is a Python-based cybersecurity toolkit featuring a custom graphical interface inspired by the Matrix aesthetic.
 
 It combines network analysis, OSINT capabilities, security testing tools and text utilities into a single interactive dashboard.
 
-Designed with a red-on-black interface, keyboard navigation and real network operations, LITER TOOL provides a centralized environment for cybersecurity experimentation and authorized security assessments.
+Designed with a red-on-black interface, keyboard navigation and real network operations, CORE TOOL provides a centralized environment for cybersecurity experimentation and authorized security assessments.
 
 ## Features
 
@@ -60,7 +60,7 @@ Designed with a red-on-black interface, keyboard navigation and real network ope
 
 ## Interface
 
-LITER TOOL features:
+CORE TOOL features:
 
 - Matrix-inspired digital rain boot animation.
 - Custom red neon visual theme.
@@ -85,13 +85,14 @@ Install the main dependencies:
 pip install pygame requests dnspython
 ```
 
-If it didn't work, try:
+If it doesn't work, try:
 
 ```bash
 python3 -m venv env
 ```
 
-then: 
+Then:
+
 ```bash
 source env/bin/activate
 ```
@@ -115,13 +116,13 @@ Some tools also require external software:
 Clone the repository:
 
 ```bash
-git clone https://github.com/YOUR-USERNAME/LITER-TOOL.git
+git clone https://github.com/YOUR-USERNAME/CORE-TOOL.git
 ```
 
 Enter the project directory:
 
 ```bash
-cd LITER-TOOL
+cd CORE-TOOL
 ```
 
 Install dependencies:
@@ -139,14 +140,14 @@ pip install pygame dnspython
 Launch the application:
 
 ```bash
-sudo python3 liter_tool.py
+sudo python3 core_tool.py
 ```
 
 ## API Configuration
 
 Some OSINT integrations require API keys.
 
-LITER TOOL supports the following API services:
+CORE TOOL supports the following API services:
 
 | Service | Configuration key |
 |---|---|
@@ -185,11 +186,9 @@ For Have I Been Pwned, configure the `HIBP_API_KEY` environment variable.
 | Q | Quit / return to dashboard |
 | SPACE | Skip to the intro credit screen |
 
-
-
 ## Security & Legal Disclaimer
 
-LITER TOOL is intended exclusively for educational purposes, cybersecurity research and authorized security assessments.
+CORE TOOL is intended exclusively for educational purposes, cybersecurity research and authorized security assessments.
 
 By using this software, you agree to:
 
@@ -205,15 +204,16 @@ Certain features, including WiFi password auditing and multithreaded load genera
 
 ## Author
 
-**LITER TECH**
+**CORE TECH**
 
 Cybersecurity | Network Analysis | OSINT | Python Development
-tiktok: liter tech
+
+TikTok: CORE TECH
 
 ---
 
 <p align="center">
-  <strong>LITER TOOL — Built by LITER TECH</strong>
+  <strong>CORE TOOL — Built by CORE TECH</strong>
 </p>
 
 <p align="center">
